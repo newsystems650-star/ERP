@@ -1,0 +1,312 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated NicCore ERP user profile isolated by UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "role": {
+          "type": "string",
+          "enum": ["ADMIN", "MANAGER", "OPERATOR", "VIEWER"]
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "name", "email", "role", "active", "createdAt", "updatedAt"]
+    },
+    "AdminMarker": {
+      "title": "AdminMarker",
+      "description": "Trusted administrator membership marker.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Lumber catalog SKU, pricing, unit type, and live patio stock.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "sku": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["M2", "M3", "KG", "LITER", "LINEAR_M", "FEET", "INCH", "PIECE"]
+        },
+        "woodClass": {
+          "type": "string",
+          "enum": ["PRIMERA", "SEGUNDA", "TERCERA", "ESPECIAL"]
+        },
+        "measure": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "cost": { "type": "number" },
+        "price": { "type": "number" },
+        "stock": { "type": "number" },
+        "minAlert": { "type": "number" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "name", "sku", "unit", "woodClass", "measure", "cost", "price", "stock", "minAlert", "active", "createdAt", "updatedAt"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Atomic POS sale ticket, tax summary, workshop state, and patio sheet.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "code": { "type": "string", "minLength": 3, "maxLength": 48 },
+        "customerName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "subtotal": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "taxRate": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["CASH", "CARD_CREDIT", "CARD_DEBIT", "TRANSFER", "CREDIT", "MIXED"] },
+        "workshopStatus": { "type": "string", "enum": ["NOT_REQUIRED", "PENDING_WORKSHOP", "IN_WORKSHOP", "WORKSHOP_DONE", "DELIVERED"] },
+        "deliveryType": { "type": "string", "enum": ["IMMEDIATE", "DELIVERY"] },
+        "status": { "type": "string", "enum": ["CONFIRMED", "PENDING", "CANCELLED"] },
+        "itemsSummary": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "code", "customerName", "subtotal", "taxAmount", "taxRate", "total", "paymentMethod", "workshopStatus", "deliveryType", "status", "itemsSummary", "createdAt", "updatedAt"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "CFDI 4.0 fiscal invoice tied to a confirmed sale ticket.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "folio": { "type": "string", "minLength": 2, "maxLength": 48 },
+        "uuid": { "type": "string", "minLength": 8, "maxLength": 64 },
+        "ticketCode": { "type": "string", "minLength": 3, "maxLength": 48 },
+        "rfcReceptor": { "type": "string", "minLength": 10, "maxLength": 16 },
+        "nombreReceptor": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "usoCFDI": { "type": "string", "minLength": 2, "maxLength": 16 },
+        "regimenFiscal": { "type": "string", "minLength": 2, "maxLength": 16 },
+        "paymentMethod": { "type": "string", "enum": ["CASH", "CARD_CREDIT", "CARD_DEBIT", "TRANSFER", "CREDIT", "MIXED"] },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["DRAFT", "STAMPED", "CANCELLED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "folio", "uuid", "ticketCode", "rfcReceptor", "nombreReceptor", "usoCFDI", "regimenFiscal", "paymentMethod", "subtotal", "tax", "total", "status", "createdAt", "updatedAt"]
+    },
+    "Delivery": {
+      "title": "Delivery",
+      "description": "Yard dispatch and driver route delivery record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ticketCode": { "type": "string", "minLength": 3, "maxLength": 48 },
+        "customerName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "address": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "driverName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "status": { "type": "string", "enum": ["PENDING", "ASSIGNED", "IN_ROUTE", "ARRIVED", "DELIVERED", "FAILED"] },
+        "driverCheckedInAtYard": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "ticketCode", "customerName", "address", "driverName", "status", "driverCheckedInAtYard", "createdAt", "updatedAt"]
+    },
+    "WoodEntry": {
+      "title": "WoodEntry",
+      "description": "Timber receiving lot with board feet and cubic meter valuation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "species": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "woodClass": { "type": "string", "enum": ["PRIMERA", "SEGUNDA", "TERCERA", "ESPECIAL"] },
+        "quantity": { "type": "number" },
+        "totalBoardFeet": { "type": "number" },
+        "totalM3": { "type": "number" },
+        "unitCost": { "type": "number" },
+        "publicUnitPrice": { "type": "number" },
+        "projectedProfit": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "species", "woodClass", "quantity", "totalBoardFeet", "totalM3", "unitCost", "publicUnitPrice", "projectedProfit", "createdAt", "updatedAt"]
+    },
+    "CutOptimization": {
+      "title": "CutOptimization",
+      "description": "Saved 2D sheet cutting layout and efficiency calculation.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "engine": { "type": "string", "minLength": 2, "maxLength": 40 },
+        "stockWidth": { "type": "number" },
+        "stockHeight": { "type": "number" },
+        "sheetsCount": { "type": "number" },
+        "totalPiecesPlaced": { "type": "number" },
+        "efficiency": { "type": "number" },
+        "wasteM2": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "engine", "stockWidth", "stockHeight", "sheetsCount", "totalPiecesPlaced", "efficiency", "wasteM2", "createdAt", "updatedAt"]
+    },
+    "SavedReport": {
+      "title": "SavedReport",
+      "description": "Persisted financial and inventory cut report snapshot.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "totalSales": { "type": "number" },
+        "totalTax": { "type": "number" },
+        "confirmedTickets": { "type": "number" },
+        "invoicesCount": { "type": "number" },
+        "inventoryValuation": { "type": "number" },
+        "createdBy": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "title", "totalSales", "totalTax", "confirmedTickets", "invoicesCount", "inventoryValuation", "createdBy", "createdAt", "updatedAt"]
+    },
+    "AuditAction": {
+      "title": "AuditAction",
+      "description": "Immutable append-only AES-256 audited ERP event.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "action": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "iv": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "cipherText": { "type": "string", "minLength": 1, "maxLength": 8000 },
+        "verified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "action", "iv", "cipherText", "verified", "createdAt"]
+    },
+    "Company": {
+      "title": "Company",
+      "description": "Managed company or lumberyard branch record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "industry": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "employees": { "type": "number" },
+        "status": { "type": "string", "enum": ["Active", "Inactive", "Pending"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "name", "industry", "employees", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Authenticated user profile documents."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminMarker" },
+      "description": "Trusted admin role lookup markers."
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Lumber catalog and live yard stock."
+    },
+    "/tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/Ticket" },
+      "description": "Confirmed POS sales tickets and workshop status."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/Invoice" },
+      "description": "Stamped CFDI 4.0 invoices tied to tickets."
+    },
+    "/deliveries/{deliveryId}": {
+      "schema": { "$ref": "#/entities/Delivery" },
+      "description": "Yard dispatch and driver route deliveries."
+    },
+    "/woodEntries/{entryId}": {
+      "schema": { "$ref": "#/entities/WoodEntry" },
+      "description": "Wood receiving lots and board-feet valuation."
+    },
+    "/cutOptimizations/{optId}": {
+      "schema": { "$ref": "#/entities/CutOptimization" },
+      "description": "Saved 2D cut optimizer runs."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/SavedReport" },
+      "description": "Saved financial and inventory reports."
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditAction" },
+      "description": "Immutable append-only AES-256 audit log blocks."
+    },
+    "/companies/{companyId}": {
+      "schema": { "$ref": "#/entities/Company" },
+      "description": "Lumberyard branches and corporate entities."
+    }
+  }
+}

@@ -1,0 +1,397 @@
+﻿╔════════════════════════════════════════════════════════════════════════════════╗
+║                  NICCORE OS - GUÍA DE INICIO RÁPIDO                          ║
+║                          (Junio 2026 - Sincrónico)                           ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+TU SITUACIÓN ACTUAL:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+✗ PostgreSQL: falla de conexión (timeout)
+✗ npm dependencies: incompletas (tsx no encontrado)
+✗ React: componentes importados no existen (NicCoreVentas, NicEditor)
+✗ Frontend: npm run dev fallando
+✓ Bridge.js: existe pero inactivo
+✓ Python ML: existe pero sin sincronización
+✗ Sistema: procesos dispersos sin orquestación
+
+
+
+
+SOLUCIÓN RÁPIDA (5 PASOS):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PASO 1: REPARAR PROBLEMAS INMEDIATOS
+────────────────────────────────────
+
+
+$ bash niccore_fixes.sh all
+
+
+QUÉ HACE:
+  ✓ Corrige conexión PostgreSQL (timeout)
+  ✓ Instala todas las dependencias npm
+  ✓ Crea componentes React faltantes (NicCoreVentas, NicEditor)
+  ✓ Verifica/crea bridge.js
+  ✓ Crea archivos .env en raíz y client/
+
+
+TIEMPO: ~3-5 minutos
+
+
+
+
+PASO 2: SINCRONIZAR Y ARRANCAR TODOS LOS PROCESOS
+──────────────────────────────────────────────────
+
+
+$ bash niccore_startup.sh start
+
+
+QUÉ HACE (EN ORDEN):
+  [CAPA 0] Valida estructura del proyecto
+  [CAPA 1] Inicia PostgreSQL + Redis
+  [CAPA 2] Inicia Node.js Bridge + Python ML
+  [CAPA 3] Inicia Agente Telemetría Bash
+  [CAPA 4] Inicia Frontend React (Vite)
+  [CAPA 5] Inicia PM2 supervisor
+
+
+RESULTADO:
+  ✓ Todo conectado y sincronizado
+  ✓ Datos fluyendo de sensores → Backend → Frontend
+  ✓ Logs automáticamente en ./logs/
+
+
+TIEMPO: ~10 segundos
+
+
+
+
+PASO 3: VERIFICAR ESTADO
+────────────────────────
+
+
+OPCIÓN A: Una sola vez
+$ bash niccore_startup.sh status
+
+
+OPCIÓN B: Monitoreo en vivo (recomendado)
+$ bash niccore_dashboard.sh monitor
+
+
+QUÉ VES:
+  • Estado de cada proceso (✓ activo o ✗ inactivo)
+  • CPU, memoria, disco en vivo
+  • Puertos activos y conexiones
+  • Últimos eventos de log
+  • Acciones rápidas
+
+
+
+
+PASO 4: ACCEDER AL FRONTEND
+───────────────────────────
+
+
+Abre en navegador:
+  → http://localhost:5173
+
+
+(Vite frontend con React)
+
+
+Deberías ver:
+  ✓ Dashboard sincronizado
+  ✓ Datos en tiempo real
+  ✓ Conectado a base de datos
+
+
+
+
+PASO 5: MONITOREAR EN VIVO
+──────────────────────────
+
+
+En otra terminal:
+$ bash niccore_startup.sh logs bridge
+
+
+O ver todos:
+$ tail -f logs/*.log
+
+
+
+
+COMANDOS DIARIOS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+INICIAR SISTEMA:
+  $ bash niccore_startup.sh start
+
+
+DETENER SISTEMA (sin borrar datos):
+  $ bash niccore_startup.sh stop
+
+
+REINICIAR SISTEMA:
+  $ bash niccore_startup.sh restart
+
+
+VER ESTADO ACTUAL:
+  $ bash niccore_startup.sh status
+
+
+MONITOREO EN VIVO:
+  $ bash niccore_dashboard.sh monitor
+
+
+VER LOGS EN VIVO:
+  $ bash niccore_startup.sh logs bridge    # Logs del bridge
+  $ bash niccore_startup.sh logs ml         # Logs del ML
+  $ tail -f logs/*.log                      # Todos los logs
+
+
+REPARAR PROBLEMAS:
+  $ bash niccore_fixes.sh all               # Reparación completa
+  $ bash niccore_fixes.sh postgresql        # Solo PostgreSQL
+  $ bash niccore_fixes.sh npm               # Solo npm
+  $ bash niccore_fixes.sh react             # Solo React
+
+
+VER ESTRUCTURA DEL PROYECTO:
+  $ bash niccore_structure_map.sh
+
+
+VER PUERTOS EN USO:
+  $ lsof -i -P -n | grep LISTEN
+
+
+CONECTAR A PostgreSQL:
+  $ psql -h localhost -U postgres -d niccore_db
+
+
+CONECTAR A Redis:
+  $ redis-cli
+  > MONITOR
+
+
+
+
+ESTRUCTURA DE CARPETAS (RESUMEN):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+~/niccore/
+├── [RAÍZ] Configuración global
+│   ├── package.json          Scripts npm y dependencias Node
+│   ├── niccore_startup.sh    ⭐ ARRANQUE MAESTRO
+│   ├── niccore_fixes.sh      Reparaciones
+│   ├── niccore_dashboard.sh  Monitoreo
+│   ├── niccore_structure_map.sh  Documentación
+│   └── .env                  Variables de entorno
+│
+├── bin/                      Binarios C++ compilados
+│   ├── motor_calculo_bin
+│   ├── niccore_vortex
+│   └── rappi_filter
+│
+├── src/                      Código fuente (C++, Python)
+│   ├── main.cpp
+│   ├── niccore_ml_main.py    ⭐ MÁQUINA ML (TCP:9999)
+│   └── bridge.js             ⭐ ORQUESTADOR (Socket Unix)
+│
+├── client/                   Frontend React (Vite)
+│   ├── src/App.tsx           Importa componentes
+│   ├── modules/
+│   │   ├── NicCoreVentas.tsx (creado por fixes)
+│   │   └── NicEditor.tsx     (creado por fixes)
+│   └── package.json
+│
+├── modules/                  Módulos especializados
+│   ├── telemetry/
+│   ├── logistics/
+│   ├── erp/
+│   ├── payment/
+│   └── api/
+│
+├── prisma/                   Definición de BD
+│   └── schema.prisma         Todas las tablas
+│
+└── logs/                     Logs automáticos
+    ├── startup_*.log
+    ├── bridge_*.log
+    ├── ml_*.log
+    └── telemetry_*.log
+
+
+
+
+FLUJO DE DATOS (EN VIVO):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+1. SENSORES/MOTOS (Android Termux)
+   │
+   └─> TCP:9999 [niccore_ml_main.py recibe datos]
+       │
+       ├─> Procesa con ML
+       ├─> Detecta anomalías
+       └─> Guarda en PostgreSQL
+           │
+           └─> Redis cache
+               │
+               └─> bridge.js [Socket Unix]
+                   │
+                   └─> Frontend Vite (React)
+                       │
+                       └─> http://localhost:5173
+
+
+
+
+PUERTOS UTILIZADOS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+5432   PostgreSQL (BD principal)
+6379   Redis (caché)
+3000   Node.js API (aproximado)
+5173   Vite Frontend (React)
+9999   Python ML TCP (telemetría)
+/tmp/niccore_vortex.sock   Bridge.js Socket Unix
+
+
+
+
+TROUBLESHOOTING RÁPIDO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROBLEMA: "npm run dev" falla con "tsx: orden no encontrada"
+SOLUCIÓN: $ bash niccore_fixes.sh npm
+
+
+PROBLEMA: "NicCoreVentas not found" en React
+SOLUCIÓN: $ bash niccore_fixes.sh react
+
+
+PROBLEMA: PostgreSQL "invalid connection option 'timeout'"
+SOLUCIÓN: $ bash niccore_fixes.sh postgresql
+
+
+PROBLEMA: Port 5173 already in use
+SOLUCIÓN: $ lsof -i :5173 | grep -v PID | awk '{print $2}' | xargs kill -9
+          $ npm run dev
+
+
+PROBLEMA: Redis "connection refused"
+SOLUCIÓN: $ redis-cli ping
+          Si falla: sudo systemctl start redis-server
+
+
+PROBLEMA: Procesos siguen corriendo después de stop
+SOLUCIÓN: $ killall -9 node python3 vite
+
+
+PROBLEMA: Socket Unix /tmp/niccore_vortex.sock no existe
+SOLUCIÓN: $ rm -f /tmp/niccore_vortex.sock
+          $ bash niccore_startup.sh restart
+
+
+
+
+ARCHIVO DE REFERENCIA RÁPIDA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Necesitas ver la estructura detallada:
+  → bash niccore_structure_map.sh
+
+
+Necesitas diagnosticar:
+  → bash niccore_startup.sh status
+  → bash niccore_dashboard.sh once
+
+
+Necesitas monitoreo en vivo:
+  → bash niccore_dashboard.sh monitor
+  → REFRESH_RATE=3 bash niccore_dashboard.sh monitor
+
+
+Necesitas ver logs:
+  → bash niccore_startup.sh logs
+  → tail -f logs/startup_*.log
+
+
+Necesitas reparar:
+  → bash niccore_fixes.sh all
+  → bash niccore_fixes.sh [postgresql|npm|react|bridge|env]
+
+
+Necesitas reiniciar:
+  → bash niccore_startup.sh stop
+  → sleep 2
+  → bash niccore_startup.sh start
+
+
+
+
+ARQUITECTURA EN 60 SEGUNDOS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+NICCORE OS es un SISTEMA OPERATIVO EMPRESARIAL HÍBRIDO:
+
+
+[CAPA 0] Estructura de carpetas (respetada)
+[CAPA 1] PostgreSQL + Redis (persistencia y caché)
+[CAPA 2] Node.js Bridge + Python ML (orquestación e inteligencia)
+[CAPA 3] Telemetría Bash (lectura de /proc, /sys)
+[CAPA 4] Frontend React/Vite (interfaz visual)
+[CAPA 5] PM2 (supervisor de procesos)
+
+
+TODO se sincroniza automáticamente en STARTUP.
+TODO se monitorea en DASHBOARD.
+TODO se repara en FIXES.
+
+
+Tu rol: INICIAR, MONITOREAR, MANTENER - Con 3 comandos.
+
+
+
+
+VER ESTA GUÍA SIEMPRE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+Guardá estos scripts en tu ~/niccore/:
+  ✓ niccore_startup.sh
+  ✓ niccore_dashboard.sh
+  ✓ niccore_fixes.sh
+  ✓ niccore_structure_map.sh
+
+
+Hazlos ejecutables:
+  $ chmod +x niccore_*.sh
+
+
+
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                     ¡LISTO PARA EMPEZAR!                                      ║
+║                                                                                ║
+║  1. bash niccore_fixes.sh all          (Repara todo)                          ║
+║  2. bash niccore_startup.sh start      (Inicia sistema)                       ║
+║  3. bash niccore_dashboard.sh monitor  (Monitorea)                            ║
+║  4. Abre: http://localhost:5173       (Ve el frontend)                        ║
+║                                                                                ║
+║  ¿Problemas?  bash niccore_fixes.sh [problema]                               ║
+║  ¿Estado?     bash niccore_startup.sh status                                  ║
+║  ¿Logs?       bash niccore_startup.sh logs                                    ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝

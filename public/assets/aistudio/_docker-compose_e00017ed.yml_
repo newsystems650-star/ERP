@@ -1,0 +1,22 @@
+﻿version: '3.8'
+
+
+services:
+  ia-hardware-engine:
+    build: .
+    container_name: que32_core_engine
+    network_mode: "host" # Elimina la pila de red virtual para latencia cero
+    privileged: true     # Permite al contenedor ejecutar 'dd' en hardware real del host
+    restart: always
+    volumes:
+      # 1. COMPARTIR PUERTOS USB FÍSICOS (Crucial para libusb y la RAM del celular)
+      - /dev/bus/usb:/dev/bus/usb
+      - /dev:/dev
+      
+      # 2. SINCRONIZACIÓN DE BLOQUES BINARIOS (Sockets de dominio Unix compartidos)
+      # Esto permite que un programa fuera del contenedor hable con el motor de C dentro a través de la memoria RAM
+      - /tmp:/tmp
+      
+      # 3. ALMACENAMIENTO DE FIRMWARES Y VOLCADOS
+      # Lo que escriba 'dd' dentro del contenedor se guarda físicamente en tu PC anfitriona
+      - ./storage:/app/storage

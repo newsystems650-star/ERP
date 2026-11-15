@@ -1,0 +1,8 @@
+{
+  "name": "NicCore: Timber ERP",
+  "description": "Professional Enterprise Resource Planning system for timber businesses, featuring high-performance C++ calculation engine, atomic transactions, and multi-role management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

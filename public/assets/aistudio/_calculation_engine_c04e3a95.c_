@@ -1,0 +1,75 @@
+﻿#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <openssl/evp.h>
+#include "protocol.h"
+
+
+#define SOCKET_PATH "/tmp/que32_engine.sock"
+
+
+// Clave simétrica local de 256 bits para descifrado ultrarrápido en memoria
+const unsigned char AES_KEY[32] = "01234567890123456789012345678901";
+
+
+void decrypt_payload(const uint8_t *ciphertext, int len, const uint8_t *iv, uint8_t *plaintext) {
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    int outlen;
+    
+    // Inicializar algoritmo criptográfico nativo AES-256-CBC
+    EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, AES_KEY, iv);
+    EVP_DecryptUpdate(ctx, plaintext, &outlen, ciphertext, len);
+    EVP_DecryptFinal_ex(ctx, plaintext + outlen, &outlen);
+    
+    EVP_CIPHER_CTX_free(ctx);
+}
+
+
+int main() {
+    int server_fd, client_fd;
+    struct sockaddr_un addr;
+    que32_packet_t packet;
+
+
+    // 1. Crear el Socket de Dominio Unix de bajo nivel
+    server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, SOCKET_PATH, sizeof(addr.sun_path) - 1);
+    unlink(SOCKET_PATH); // Limpiar socket previo en /tmp/
+
+
+    bind(server_fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
+    listen(server_fd, 5);
+    printf("[Motor] Escuchando flujos binarios binarios en %s...\n", SOCKET_PATH);
+
+
+    while ((client_fd = accept(server_fd, NULL, NULL)) >= 0) {
+        // 2. Leer el bloque de memoria binaria directamente del buffer del Kernel
+        ssize_t bytes_received = recv(client_fd, &packet, sizeof(que32_packet_t), MSG_WAITALL);
+        
+        if (bytes_received == sizeof(que32_packet_t)) {
+            // Verificar cabecera mágica antes de gastar ciclos de CPU
+            if (packet.magic_header == 0x51554532) { 
+                uint8_t decrypted_data[256] = {0};
+                
+                // Descifrar directamente en la RAM
+                decrypt_payload(packet.encrypted_payload, packet.data_length, packet.iv, decrypted_data);
+                
+                printf("[Motor] Comando Ejecutado: 0x%X | Datos Descifrados: %s\n", 
+                       packet.command_id, decrypted_data);
+                
+                // Aquí el motor despacha la instrucción binaria al bus USB de forma inmediata
+            }
+        }
+        close(client_fd);
+    }
+
+
+    close(server_fd);
+    return 0;
+}

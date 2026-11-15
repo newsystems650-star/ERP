@@ -1,0 +1,26 @@
+﻿#pragma once
+#include <stdint.h>
+
+
+#pragma pack(push, 1)
+
+
+// Estructura para el flujo de autenticación 2FA e Intercambio de Llaves
+typedef struct {
+    uint32_t device_id;         // ID único del hardware (ej. serial de la placa base)
+    uint8_t  sha256_hash[32];   // Integridad del payload o firmware firmware
+    uint8_t  totp_code[4];      // Token 2FA numérico empaquetado en bytes
+    uint8_t  session_key[32];   // Clave simétrica derivada para esta sesión de flasheo
+} crypto_handshake_t;
+
+
+// Estructura del Recuperador de Datos (Data Recovery Packet)
+typedef struct {
+    uint32_t backup_sector;     // Sector de la memoria RAM / eMMC a recuperar
+    uint32_t data_length;       // Tamaño del bloque de datos devuelto
+    uint8_t  bcrypt_salt[16];   // Salt usado para verificar la firma del técnico autorizado
+    uint8_t  payload[512];      // Datos binarios puros rescatados del celular
+} recovery_packet_t;
+
+
+#pragma pack(pop)

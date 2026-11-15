@@ -1,0 +1,437 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Reusable Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(ownerId) {
+      return isVerified() && request.auth.uid == ownerId;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'newsystems650@gmail.com'
+      );
+    }
+
+    function isStr(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role', 'active', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'name', 'email', 'role', 'active', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && isStr(data.name, 1, 120)
+        && isStr(data.email, 3, 160)
+        && data.role in ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER']
+        && data.active is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdminMarker(data) {
+      return data.keys().hasAll(['uid', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'createdAt'])
+        && isValidId(data.uid)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'name', 'sku', 'unit', 'woodClass', 'measure', 'cost', 'price', 'stock', 'minAlert', 'active', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'name', 'sku', 'unit', 'woodClass', 'measure', 'cost', 'price', 'stock', 'minAlert', 'active', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.name, 1, 160)
+        && isStr(data.sku, 1, 48)
+        && data.unit in ['M2', 'M3', 'KG', 'LITER', 'LINEAR_M', 'FEET', 'INCH', 'PIECE']
+        && data.woodClass in ['PRIMERA', 'SEGUNDA', 'TERCERA', 'ESPECIAL']
+        && isStr(data.measure, 1, 120)
+        && data.cost is number
+        && data.price is number
+        && data.stock is number
+        && data.minAlert is number
+        && data.active is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTicket(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'code', 'customerName', 'subtotal', 'taxAmount', 'taxRate', 'total', 'paymentMethod', 'workshopStatus', 'deliveryType', 'status', 'itemsSummary', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'code', 'customerName', 'subtotal', 'taxAmount', 'taxRate', 'total', 'paymentMethod', 'workshopStatus', 'deliveryType', 'status', 'itemsSummary', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.code, 3, 48)
+        && isStr(data.customerName, 1, 160)
+        && data.subtotal is number
+        && data.taxAmount is number
+        && data.taxRate is number
+        && data.total is number
+        && data.paymentMethod in ['CASH', 'CARD_CREDIT', 'CARD_DEBIT', 'TRANSFER', 'CREDIT', 'MIXED']
+        && data.workshopStatus in ['NOT_REQUIRED', 'PENDING_WORKSHOP', 'IN_WORKSHOP', 'WORKSHOP_DONE', 'DELIVERED']
+        && data.deliveryType in ['IMMEDIATE', 'DELIVERY']
+        && data.status in ['CONFIRMED', 'PENDING', 'CANCELLED']
+        && isStr(data.itemsSummary, 1, 1000)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidInvoice(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'folio', 'uuid', 'ticketCode', 'rfcReceptor', 'nombreReceptor', 'usoCFDI', 'regimenFiscal', 'paymentMethod', 'subtotal', 'tax', 'total', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'folio', 'uuid', 'ticketCode', 'rfcReceptor', 'nombreReceptor', 'usoCFDI', 'regimenFiscal', 'paymentMethod', 'subtotal', 'tax', 'total', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.folio, 2, 48)
+        && isStr(data.uuid, 8, 64)
+        && isStr(data.ticketCode, 3, 48)
+        && isStr(data.rfcReceptor, 10, 16)
+        && isStr(data.nombreReceptor, 1, 180)
+        && isStr(data.usoCFDI, 2, 16)
+        && isStr(data.regimenFiscal, 2, 16)
+        && data.paymentMethod in ['CASH', 'CARD_CREDIT', 'CARD_DEBIT', 'TRANSFER', 'CREDIT', 'MIXED']
+        && data.subtotal is number
+        && data.tax is number
+        && data.total is number
+        && data.status in ['DRAFT', 'STAMPED', 'CANCELLED']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidDelivery(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'ticketCode', 'customerName', 'address', 'driverName', 'status', 'driverCheckedInAtYard', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'ticketCode', 'customerName', 'address', 'driverName', 'status', 'driverCheckedInAtYard', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.ticketCode, 3, 48)
+        && isStr(data.customerName, 1, 160)
+        && isStr(data.address, 1, 300)
+        && isStr(data.driverName, 1, 120)
+        && data.status in ['PENDING', 'ASSIGNED', 'IN_ROUTE', 'ARRIVED', 'DELIVERED', 'FAILED']
+        && data.driverCheckedInAtYard is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidWoodEntry(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'species', 'woodClass', 'quantity', 'totalBoardFeet', 'totalM3', 'unitCost', 'publicUnitPrice', 'projectedProfit', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'species', 'woodClass', 'quantity', 'totalBoardFeet', 'totalM3', 'unitCost', 'publicUnitPrice', 'projectedProfit', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.species, 1, 120)
+        && data.woodClass in ['PRIMERA', 'SEGUNDA', 'TERCERA', 'ESPECIAL']
+        && data.quantity is number
+        && data.totalBoardFeet is number
+        && data.totalM3 is number
+        && data.unitCost is number
+        && data.publicUnitPrice is number
+        && data.projectedProfit is number
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCutOptimization(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'engine', 'stockWidth', 'stockHeight', 'sheetsCount', 'totalPiecesPlaced', 'efficiency', 'wasteM2', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'engine', 'stockWidth', 'stockHeight', 'sheetsCount', 'totalPiecesPlaced', 'efficiency', 'wasteM2', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.engine, 2, 40)
+        && data.stockWidth is number
+        && data.stockHeight is number
+        && data.sheetsCount is number
+        && data.totalPiecesPlaced is number
+        && data.efficiency is number
+        && data.wasteM2 is number
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSavedReport(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'title', 'totalSales', 'totalTax', 'confirmedTickets', 'invoicesCount', 'inventoryValuation', 'createdBy', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'title', 'totalSales', 'totalTax', 'confirmedTickets', 'invoicesCount', 'inventoryValuation', 'createdBy', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.title, 1, 160)
+        && data.totalSales is number
+        && data.totalTax is number
+        && data.confirmedTickets is number
+        && data.invoicesCount is number
+        && data.inventoryValuation is number
+        && isStr(data.createdBy, 1, 120)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAuditAction(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'action', 'iv', 'cipherText', 'verified', 'createdAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'action', 'iv', 'cipherText', 'verified', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.action, 1, 80)
+        && isStr(data.iv, 1, 128)
+        && isStr(data.cipherText, 1, 8000)
+        && data.verified is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidCompany(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'name', 'industry', 'employees', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'name', 'industry', 'employees', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && isStr(data.name, 1, 160)
+        && isStr(data.industry, 1, 120)
+        && data.employees is number
+        && data.status in ['Active', 'Inactive', 'Pending']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Security Gates
+    match /test/connection {
+      allow get: if isSignedIn();
+    }
+
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isVerified() && resource.data.uid == request.auth.uid;
+      allow create: if isValidId(userId) && isAdmin() && isValidAdminMarker(incoming()) && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isVerified() && (resource.data.uid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(userId)
+        && isVerified()
+        && isValidUserProfile(incoming())
+        && incoming().uid == userId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && ((isOwner(userId) && incoming().role == 'OPERATOR') || isAdmin());
+      allow update: if isValidId(userId)
+        && isVerified()
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId)
+            && incoming().role == existing().role
+            && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    match /products/{productId} {
+      allow get: if isValidId(productId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(productId)
+        && isVerified()
+        && isValidProduct(incoming())
+        && incoming().id == productId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(productId)
+        && isVerified()
+        && isValidProduct(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(existing().ownerUid)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'price', 'cost', 'minAlert', 'active', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(productId) && isAdmin();
+    }
+
+    match /tickets/{ticketId} {
+      allow get: if isValidId(ticketId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(ticketId)
+        && isVerified()
+        && isValidTicket(incoming())
+        && incoming().id == ticketId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(ticketId)
+        && isVerified()
+        && isValidTicket(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(existing().ownerUid)
+            && existing().status != 'CANCELLED'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['workshopStatus', 'status', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(ticketId) && isAdmin();
+    }
+
+    match /invoices/{invoiceId} {
+      allow get: if isValidId(invoiceId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(invoiceId)
+        && isVerified()
+        && isValidInvoice(incoming())
+        && incoming().id == invoiceId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().status in ['DRAFT', 'STAMPED']
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(invoiceId)
+        && isVerified()
+        && isValidInvoice(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(existing().ownerUid)
+            && existing().status != 'CANCELLED'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+      allow delete: if false;
+    }
+
+    match /deliveries/{deliveryId} {
+      allow get: if isValidId(deliveryId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(deliveryId)
+        && isVerified()
+        && isValidDelivery(incoming())
+        && incoming().id == deliveryId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(deliveryId)
+        && isVerified()
+        && isValidDelivery(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(existing().ownerUid)
+            && existing().status != 'DELIVERED'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'driverName', 'driverCheckedInAtYard', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(deliveryId) && isAdmin();
+    }
+
+    match /woodEntries/{entryId} {
+      allow get: if isValidId(entryId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(entryId)
+        && isVerified()
+        && isValidWoodEntry(incoming())
+        && incoming().id == entryId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update, delete: if isValidId(entryId) && isAdmin();
+    }
+
+    match /cutOptimizations/{optId} {
+      allow get: if isValidId(optId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(optId)
+        && isVerified()
+        && isValidCutOptimization(incoming())
+        && incoming().id == optId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update, delete: if isValidId(optId) && isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow get: if isValidId(reportId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(reportId)
+        && isVerified()
+        && isValidSavedReport(incoming())
+        && incoming().id == reportId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update, delete: if isValidId(reportId) && isAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow get: if isValidId(logId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(logId)
+        && isVerified()
+        && isValidAuditAction(incoming())
+        && incoming().id == logId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /companies/{companyId} {
+      allow get: if isValidId(companyId) && (isOwner(existing().ownerUid) || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerUid == request.auth.uid || request.auth.token.email == 'newsystems650@gmail.com');
+      allow create: if isValidId(companyId)
+        && isVerified()
+        && isValidCompany(incoming())
+        && incoming().id == companyId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(companyId)
+        && isAdmin()
+        && isValidCompany(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(companyId) && isAdmin();
+    }
+  }
+}

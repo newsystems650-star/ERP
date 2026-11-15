@@ -1,0 +1,653 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  OPERATOR
+  VIEWER
+}
+
+enum UnitType {
+  M2
+  M3
+  KG
+  LITER
+  LINEAR_M
+  FEET
+  INCH
+  PIECE
+}
+
+enum TicketType {
+  SALE
+  PURCHASE
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  RETURN
+}
+
+enum TicketStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD_CREDIT
+  CARD_DEBIT
+  TRANSFER
+  CREDIT
+  MIXED
+}
+
+enum WorkshopStatus {
+  NOT_REQUIRED
+  PENDING_WORKSHOP
+  IN_WORKSHOP
+  WORKSHOP_DONE
+  DELIVERED
+}
+
+enum DeliveryType {
+  IMMEDIATE
+  DELIVERY
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+enum CreditStatus {
+  ACTIVE
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum CommChannel {
+  WHATSAPP
+  EMAIL
+  TELEGRAM
+  SMS
+}
+
+enum CommDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum CommStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum InvoiceType {
+  SALE
+  PURCHASE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  STAMPED
+  CANCELLED
+}
+
+enum ExpenseType {
+  SALARY
+  SUPPLIER
+  RENT
+  UTILITIES
+  MAINTENANCE
+  TAXES
+  OTHER
+}
+
+enum PayPeriod {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum ReservationStatus {
+  ACTIVE
+  RELEASED
+  CONFIRMED
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum RefundType {
+  CASH
+  CREDIT
+  EXCHANGE
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  IN_ROUTE
+  ARRIVED
+  DELIVERED
+  FAILED
+}
+
+enum WoodClass {
+  PRIMERA
+  SEGUNDA
+  TERCERA
+  ESPECIAL
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  password         String
+  role             Role      @default(OPERATOR)
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  tickets          Ticket[]
+  auditLogs        AuditLog[]
+  quotations       Quotation[]
+  expenses         Expense[]
+  cutSheets        CutSheet[]
+  invoices         Invoice[]
+  woodEntries      WoodEntry[]
+  communications   CustomerCommunication[]
+  returns          Return[]
+  driverDeliveries Delivery[] @relation("DriverDeliveries")
+  @@map("users")
+}
+
+model Product {
+  id             String          @id @default(cuid())
+  name           String
+  description    String?
+  sku            String          @unique
+  unit           UnitType
+  price          Decimal         @db.Decimal(10,4)
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  stock          Stock?
+  ticketItems    TicketItem[]
+  quotationItems QuotationItem[]
+  reservations   StockReservation[]
+  returnItems    ReturnItem[]
+  woodEntries    WoodEntry[]
+  @@map("products")
+}
+
+model Stock {
+  id        String   @id @default(cuid())
+  quantity  Decimal  @db.Decimal(12,4)
+  minAlert  Decimal? @db.Decimal(12,4)
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id])
+  updatedAt DateTime @updatedAt
+  @@map("stock")
+}
+
+model StockReservation {
+  id        String            @id @default(cuid())
+  quantity  Decimal           @db.Decimal(12,4)
+  status    ReservationStatus @default(ACTIVE)
+  expiresAt DateTime
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  productId String
+  product   Product           @relation(fields: [productId], references: [id])
+  ticketId  String?
+  ticket    Ticket?           @relation(fields: [ticketId], references: [id])
+  @@map("stock_reservations")
+}
+
+model Ticket {
+  id             String         @id @default(cuid())
+  code           String         @unique
+  type           TicketType
+  status         TicketStatus   @default(PENDING)
+  subtotal       Decimal?       @db.Decimal(12,4)
+  taxAmount      Decimal?       @db.Decimal(12,4)
+  taxRate        Decimal?       @db.Decimal(5,4)
+  total          Decimal        @db.Decimal(12,4) @default(0)
+  paymentMethod  PaymentMethod?
+  workshopStatus WorkshopStatus?
+  deliveryType   DeliveryType?
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  customerId     String?
+  customer       Customer?      @relation(fields: [customerId], references: [id])
+  quotationId    String?        @unique
+  quotation      Quotation?     @relation(fields: [quotationId], references: [id])
+  items          TicketItem[]
+  auditLogs      AuditLog[]
+  invoice        Invoice?
+  credit         Credit?
+  delivery       Delivery?
+  reservations   StockReservation[]
+  returns        Return[]
+  payments       Payment[]
+  @@map("tickets")
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  amount    Decimal       @db.Decimal(12,4)
+  method    PaymentMethod
+  reference String?
+  notes     String?
+  createdAt DateTime      @default(now())
+  ticketId  String
+  ticket    Ticket        @relation(fields: [ticketId], references: [id])
+  @@map("payments")
+}
+
+model TicketItem {
+  id                  String   @id @default(cuid())
+  quantity            Decimal  @db.Decimal(12,4)
+  unitPrice           Decimal  @db.Decimal(10,4)
+  subtotal            Decimal  @db.Decimal(12,4)
+  unit                UnitType
+  cuttingInstructions String?
+  cuttingSpecs        Json?
+  requiresCutting     Boolean  @default(false)
+  ticketId            String
+  ticket              Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  productId           String
+  product             Product  @relation(fields: [productId], references: [id])
+  @@map("ticket_items")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String
+  before    Json?
+  after     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  ticketId  String?
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
+  @@map("audit_logs")
+}
+
+model Customer {
+  id             String                  @id @default(cuid())
+  name           String
+  phone          String?
+  email          String?
+  address        String?
+  rfc            String?
+  notes          String?
+  active         Boolean                 @default(true)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  tickets        Ticket[]
+  credits        Credit[]
+  invoices       Invoice[]
+  communications CustomerCommunication[]
+  @@map("customers")
+}
+
+model Credit {
+  id         String        @id @default(cuid())
+  amount     Decimal       @db.Decimal(12,4)
+  balance    Decimal       @db.Decimal(12,4)
+  status     CreditStatus  @default(ACTIVE)
+  dueDate    DateTime?
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  customerId String
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  ticketId   String?       @unique
+  ticket     Ticket?       @relation(fields: [ticketId], references: [id])
+  payments   CreditPayment[]
+  @@map("credits")
+}
+
+model CreditPayment {
+  id        String        @id @default(cuid())
+  amount    Decimal       @db.Decimal(12,4)
+  method    PaymentMethod
+  notes     String?
+  createdAt DateTime      @default(now())
+  creditId  String
+  credit    Credit        @relation(fields: [creditId], references: [id])
+  @@map("credit_payments")
+}
+
+model Quotation {
+  id         String          @id @default(cuid())
+  code       String          @unique
+  status     QuotationStatus @default(DRAFT)
+  notes      String?
+  subtotal   Decimal         @db.Decimal(12,4) @default(0)
+  tax        Decimal         @db.Decimal(12,4) @default(0)
+  total      Decimal         @db.Decimal(12,4) @default(0)
+  taxRate    Decimal         @db.Decimal(5,4)  @default(0.16)
+  applyTax   Boolean         @default(false)
+  validUntil DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  userId     String
+  user       User            @relation(fields: [userId], references: [id])
+  items      QuotationItem[]
+  ticket     Ticket?
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id          String    @id @default(cuid())
+  quantity    Decimal   @db.Decimal(12,4)
+  unitPrice   Decimal   @db.Decimal(10,4)
+  discount    Decimal   @db.Decimal(5,4) @default(0)
+  subtotal    Decimal   @db.Decimal(12,4)
+  unit        UnitType
+  description String?
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  @@map("quotation_items")
+}
+
+model Expense {
+  id          String      @id @default(cuid())
+  type        ExpenseType
+  category    String
+  description String
+  amount      Decimal     @db.Decimal(12,4)
+  tax         Decimal     @db.Decimal(12,4) @default(0)
+  total       Decimal     @db.Decimal(12,4)
+  reference   String?
+  date        DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  @@map("expenses")
+}
+
+model Employee {
+  id        String    @id @default(cuid())
+  name      String
+  position  String
+  salary    Decimal   @db.Decimal(12,4)
+  payPeriod PayPeriod @default(BIWEEKLY)
+  active    Boolean   @default(true)
+  startDate DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  payrolls  Payroll[]
+  @@map("employees")
+}
+
+model Payroll {
+  id          String    @id @default(cuid())
+  periodStart DateTime
+  periodEnd   DateTime
+  baseSalary  Decimal   @db.Decimal(12,4)
+  bonuses     Decimal   @db.Decimal(12,4) @default(0)
+  deductions  Decimal   @db.Decimal(12,4) @default(0)
+  total       Decimal   @db.Decimal(12,4)
+  notes       String?
+  paid        Boolean   @default(false)
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  @@map("payrolls")
+}
+
+model CutSheet {
+  id          String      @id @default(cuid())
+  name        String
+  stockWidth  Decimal     @db.Decimal(10,4)
+  stockHeight Decimal     @db.Decimal(10,4)
+  stockQty    Int         @default(1)
+  kerf        Decimal     @db.Decimal(6,4) @default(0.003)
+  efficiency  Decimal?    @db.Decimal(5,4)
+  waste       Decimal?    @db.Decimal(10,4)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  pieces      CutPiece[]
+  results     CutResult[]
+  @@map("cut_sheets")
+}
+
+model CutPiece {
+  id         String   @id @default(cuid())
+  label      String
+  width      Decimal  @db.Decimal(10,4)
+  height     Decimal  @db.Decimal(10,4)
+  quantity   Int      @default(1)
+  grain      Boolean  @default(false)
+  cutSheetId String
+  cutSheet   CutSheet @relation(fields: [cutSheetId], references: [id], onDelete: Cascade)
+  @@map("cut_pieces")
+}
+
+model CutResult {
+  id         String   @id @default(cuid())
+  layout     Json
+  efficiency Decimal  @db.Decimal(5,4)
+  waste      Decimal  @db.Decimal(10,4)
+  sheets     Int
+  createdAt  DateTime @default(now())
+  cutSheetId String
+  cutSheet   CutSheet @relation(fields: [cutSheetId], references: [id], onDelete: Cascade)
+  @@map("cut_results")
+}
+
+model Supplier {
+  id        String      @id @default(cuid())
+  name      String
+  rfc       String?
+  email     String?
+  phone     String?
+  address   String?
+  notes     String?
+  active    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  invoices  Invoice[]
+  woodEntries WoodEntry[]
+  @@map("suppliers")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  type           InvoiceType
+  folio          String?
+  series         String?       @default("A")
+  uuid           String?       @unique
+  status         InvoiceStatus @default(DRAFT)
+  rfcEmisor      String?
+  rfcReceptor    String?
+  nombreReceptor String?
+  usoCFDI        String?       @default("G03")
+  regimenFiscal  String?
+  subtotal       Decimal       @db.Decimal(12,4)
+  tax            Decimal       @db.Decimal(12,4) @default(0)
+  total          Decimal       @db.Decimal(12,4)
+  xmlContent     String?       @db.Text
+  pdfUrl         String?
+  notes          String?
+  date           DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  ticketId       String?       @unique
+  ticket         Ticket?       @relation(fields: [ticketId], references: [id])
+  customerId     String?
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  supplierId     String?
+  supplier       Supplier?     @relation(fields: [supplierId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  items          InvoiceItem[]
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  description String
+  quantity    Decimal @db.Decimal(12,4)
+  unitPrice   Decimal @db.Decimal(10,4)
+  subtotal    Decimal @db.Decimal(12,4)
+  unit        String
+  claveUnit   String? @default("H87")
+  claveProd   String? @default("14111701")
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  @@map("invoice_items")
+}
+
+model CustomerCommunication {
+  id         String        @id @default(cuid())
+  channel    CommChannel
+  direction  CommDirection
+  message    String        @db.Text
+  status     CommStatus    @default(SENT)
+  sentAt     DateTime      @default(now())
+  readAt     DateTime?
+  customerId String
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  userId     String?
+  user       User?         @relation(fields: [userId], references: [id])
+  @@map("customer_communications")
+}
+
+model Return {
+  id           String       @id @default(cuid())
+  code         String       @unique
+  reason       String
+  status       ReturnStatus @default(PENDING)
+  refundType   RefundType
+  refundAmount Decimal      @db.Decimal(12,4)
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  ticketId     String
+  ticket       Ticket       @relation(fields: [ticketId], references: [id])
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  items        ReturnItem[]
+  @@map("returns")
+}
+
+model ReturnItem {
+  id          String  @id @default(cuid())
+  quantity    Decimal @db.Decimal(12,4)
+  reason      String?
+  backToStock Boolean @default(true)
+  returnId    String
+  return      Return  @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  @@map("return_items")
+}
+
+model Delivery {
+  id           String         @id @default(cuid())
+  status       DeliveryStatus @default(PENDING)
+  scheduledAt  DateTime?
+  arrivedAt    DateTime?
+  deliveredAt  DateTime?
+  photoUrl     String?
+  driverNotes  String?
+  notes        String?
+  address      String
+  contactName  String?
+  contactPhone String?
+  freightFree  Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  ticketId     String         @unique
+  ticket       Ticket         @relation(fields: [ticketId], references: [id])
+  driverId     String?
+  driver       User?          @relation("DriverDeliveries", fields: [driverId], references: [id])
+  @@map("deliveries")
+}
+
+model WoodEntry {
+  id             String    @id @default(cuid())
+  entryCode      String    @unique
+  woodType       String
+  woodClass      WoodClass
+  widthCm        Decimal   @db.Decimal(8,2)
+  lengthCm       Decimal   @db.Decimal(8,2)
+  thicknessCm    Decimal   @db.Decimal(8,2)
+  widthInch      Decimal   @db.Decimal(8,4)
+  lengthFeet     Decimal   @db.Decimal(8,4)
+  thicknessInch  Decimal   @db.Decimal(8,4)
+  totalPieces    Int
+  totalFeet      Decimal   @db.Decimal(12,4)
+  totalM3        Decimal   @db.Decimal(12,6)
+  costPerFoot    Decimal   @db.Decimal(10,4)
+  totalCost      Decimal   @db.Decimal(12,4)
+  marginPercent  Decimal   @db.Decimal(5,2)
+  pricePerFoot   Decimal   @db.Decimal(10,4)
+  pricePerPiece  Decimal   @db.Decimal(10,4)
+  pricePerM3     Decimal   @db.Decimal(10,4)
+  pricePerM2     Decimal?  @db.Decimal(10,4)
+  pricePerInch   Decimal?  @db.Decimal(10,4)
+  profitPerFoot  Decimal   @db.Decimal(10,4)
+  profitPerPiece Decimal   @db.Decimal(10,4)
+  profitTotal    Decimal   @db.Decimal(12,4)
+  notes          String?
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  supplierId     String?
+  supplier       Supplier? @relation(fields: [supplierId], references: [id])
+  productId      String?
+  product        Product?  @relation(fields: [productId], references: [id])
+  strips         WoodStrip[]
+  @@map("wood_entries")
+}
+
+model WoodStrip {
+  id            String    @id @default(cuid())
+  widthCm       Decimal   @db.Decimal(6,2)
+  widthInch     Decimal?  @db.Decimal(6,3)
+  piecesPerPlan Int
+  totalPieces   Int
+  pricePerPiece Decimal   @db.Decimal(10,4)
+  woodEntryId   String
+  woodEntry     WoodEntry @relation(fields: [woodEntryId], references: [id], onDelete: Cascade)
+  @@map("wood_strips")
+}
